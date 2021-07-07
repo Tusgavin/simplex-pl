@@ -20,6 +20,18 @@ def main():
    A = np.array(A, dtype=np.int)
    b = np.array(b, dtype=np.int)
    c = np.array(c, dtype=np.int)
+   
+   ident = np.identity(number_of_restrictions, dtype=np.int);
+   new_vars = np.zeros((number_of_restrictions), dtype=np.int);
+
+   A = np.concatenate((A, ident), axis=1)
+   c = np.concatenate((c, new_vars), axis=None)
+
+   print(A)  
+   print(b)
+   print(c)
+
+
 
 
 if __name__ == "__main__":
