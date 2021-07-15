@@ -1,7 +1,22 @@
 import numpy as np
 
-def pivot(A, b, c, leaving_index, entering_index):
-   print(A, b, c, leaving_index, entering_index)
+def pivot(tableau, elementPivotIndexes):
+   print('Tableau logo após entrar na função: \n', tableau)
+
+   for i in range(0, tableau.shape[0]):
+      for j in range(0, tableau.shape[1]):
+         if i != elementPivotIndexes[0] and j != elementPivotIndexes[1]:
+            tableau[i][j] -= tableau[elementPivotIndexes[0]][j] * tableau[i][elementPivotIndexes[1]] / tableau[elementPivotIndexes[0]][elementPivotIndexes[1]]
+
+   for i in range(0, tableau.shape[0]):
+      if i != elementPivotIndexes[0]:
+         tableau[i][elementPivotIndexes[1]] = 0.0
+   
+   for i in range(0, tableau.shape[1]):
+      if i != elementPivotIndexes[1]:
+         tableau[elementPivotIndexes[0]][i] /= tableau[elementPivotIndexes[0]][elementPivotIndexes[1]]
+   
+   tableau[elementPivotIndexes[0]][elementPivotIndexes[1]] = 1.0
 
 def getOptimizationInputValues(numberOfVariables):
    c = [int(x) for x in input().split()]
@@ -84,17 +99,28 @@ def main():
 
    print('# Tableau formado: \n', tableau)
 
-   columnToPivot = findColumnToPivot(tableau)
-   rowOfElementPivot = findMinimumRatioInColumn(tableau, columnToPivot, numberOfRestrictions)
+   iteration = 0
 
-   elementPivot = (rowOfElementPivot, columnToPivot)
+   while 1:
+      iteration += 1
 
-   print('# Indexes of element to pivot (ROW, COLUMN): \n', elementPivot)
+      print('>> Iteration: ', iteration);
 
-   # objective_value = 0
-   # iter = 0
-   # non_basis_variables_index = [x for x in range(0, numberOfVariables)]
-   # basis_variables_index = [x for x in range(numberOfVariables, numberOfVariables + numberOfRestrictions)]
+      columnToPivot = findColumnToPivot(tableau)
+      if columnToPivot == -1:
+         print('> Tratar quando não haver coluna para pivotear')
+         break;
+
+      rowOfElementPivot = findMinimumRatioInColumn(tableau, columnToPivot, numberOfRestrictions)
+      if rowOfElementPivot == -1:
+         print('> Tratar quando elementos da colunas para pivotear são menores ou iguais a zero')
+         break;
+
+      elementPivotIndexes = (rowOfElementPivot, columnToPivot)
+
+      pivot(tableau, elementPivotIndexes)
+
+   print('## Tableau final: \n', tableau)
 
 if __name__ == "__main__":
    main()
