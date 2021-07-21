@@ -98,11 +98,11 @@ def checkTableau(tableau, numberOfRestrictions):
 def getObjectiveValue(tableau):
    return tableau[tableau.shape[0] - 1][tableau.shape[1] - 1]
 
-def getSolution(tableau, type, numberOfRestrictions):
+def getSolution(tableau, type, numberOfRestrictions, numberOfVariables):
    solution = []
 
    if type == 'optimal':
-      for i in range(numberOfRestrictions, tableau.shape[1] - 1):
+      for i in range(numberOfRestrictions, numberOfRestrictions + numberOfVariables):
          if tableau[tableau.shape[0] - 1][i] == 0:
             index = np.where(tableau[:, i] == 1)
             if len(index[0]) == 1:
@@ -121,14 +121,14 @@ def getCertificate(tableau, type, numberOfRestrictions):
 
    return np.array(certificate)
 
-def analyzeTableau(tableau, numberOfRestrictions):
+def analyzeTableau(tableau, numberOfRestrictions, numberOfVariables):
    PLType = checkTableau(tableau, numberOfRestrictions)
 
    if PLType == 'optimal':
       print('otima')
       objectiveValue = getObjectiveValue(tableau)
       print(objectiveValue)
-      solution = getSolution(tableau, PLType, numberOfRestrictions)
+      solution = getSolution(tableau, PLType, numberOfRestrictions, numberOfVariables)
       print(solution)
       certificate = getCertificate(tableau, PLType, numberOfRestrictions)
       print(certificate)
@@ -174,7 +174,7 @@ def main():
    print('>> Término:')
    print('Tableau: \n', tableau)
 
-   analyzeTableau(tableau, numberOfRestrictions)
+   analyzeTableau(tableau, numberOfRestrictions, numberOfVariables)
 
 if __name__ == "__main__":
    main()
