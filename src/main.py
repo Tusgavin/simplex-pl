@@ -98,11 +98,28 @@ def checkTableau(tableau, numberOfRestrictions):
 def getObjectiveValue(tableau):
    return tableau[tableau.shape[0] - 1][tableau.shape[1] - 1]
 
-def getSolution(tableau, type):
-   return []
+def getSolution(tableau, type, numberOfRestrictions):
+   solution = []
 
-def getCertificate(tableau, type):
-   return []
+   if type == 'optimal':
+      for i in range(numberOfRestrictions, tableau.shape[1] - 1):
+         if tableau[tableau.shape[0] - 1][i] == 0:
+            index = np.where(tableau[:, i] == 1)
+            if len(index[0]) == 1:
+               solution.append(tableau[index[0][0]][tableau.shape[1] - 1])
+         else:
+            solution.append(0)
+
+   return np.array(solution)
+
+def getCertificate(tableau, type, numberOfRestrictions):
+   certificate = []
+
+   if type == 'optimal':
+      for i in range(0, numberOfRestrictions):
+         certificate.append(tableau[tableau.shape[0] - 1][i])
+
+   return np.array(certificate)
 
 def analyzeTableau(tableau, numberOfRestrictions):
    PLType = checkTableau(tableau, numberOfRestrictions)
@@ -111,19 +128,19 @@ def analyzeTableau(tableau, numberOfRestrictions):
       print('otima')
       objectiveValue = getObjectiveValue(tableau)
       print(objectiveValue)
-      solution = getSolution(tableau, 'optimality')
+      solution = getSolution(tableau, PLType, numberOfRestrictions)
       print(solution)
-      certificate = getCertificate(tableau, 'optimality')
+      certificate = getCertificate(tableau, PLType, numberOfRestrictions)
       print(certificate)
 
    elif PLType == 'unfeasible':
       print('inviavel')
-      certificate = getCertificate(tableau, 'unfeasibility')
+      certificate = getCertificate(tableau, PLType)
    
    elif PLType == 'limitless':
       print('ilimitada')
-      solution = getSolution(tableau, 'limitlessness')
-      certificate = getCertificate(tableau, 'limitlessness')
+      solution = getSolution(tableau, PLType)
+      certificate = getCertificate(tableau, PLType)
 
 def main():
    numberOfRestrictions, numberOfVariables = [int(x) for x in input().split()]
