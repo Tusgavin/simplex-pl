@@ -1,8 +1,6 @@
 import numpy as np
 
 def pivot(tableau, elementPivotIndexes):
-   print('Tableau logo após entrar na função: \n', tableau)
-
    for i in range(0, tableau.shape[0]):
       for j in range(0, tableau.shape[1]):
          if i != elementPivotIndexes[0] and j != elementPivotIndexes[1]:
@@ -18,13 +16,13 @@ def pivot(tableau, elementPivotIndexes):
    
    tableau[elementPivotIndexes[0]][elementPivotIndexes[1]] = 1.0
 
-def getOptimizationInputValues(numberOfVariables):
+def getOptimizationInputValues(numberOfRestrictions):
    c = [int(x) for x in input().split()]
 
    A = []
    b = []
    
-   for _ in range(0, numberOfVariables):
+   for _ in range(0, numberOfRestrictions):
       A_i_b = [int(x) for x in input().split()]
       
       b_i = A_i_b[-1]
@@ -40,8 +38,8 @@ def getOptimizationInputValues(numberOfVariables):
    return (A, b, c)
 
 def getFPIForm(A, b, c, numberOfRestrictions):
-   ident = np.identity(numberOfRestrictions, dtype=np.float);
-   new_vars = np.zeros((numberOfRestrictions), dtype=np.float);
+   ident = np.identity(numberOfRestrictions, dtype=np.float)
+   new_vars = np.zeros((numberOfRestrictions), dtype=np.float)
 
    A_fpi = np.concatenate((A, ident), axis=1)
    c_fpi = np.concatenate((c, new_vars), axis=None)
@@ -51,6 +49,12 @@ def getFPIForm(A, b, c, numberOfRestrictions):
 
 def getTableau(A_fpi, b_fpi, c_fpi, numberOfRestrictions, numberOfVariables):
    tableau = np.zeros((numberOfRestrictions + 1, numberOfRestrictions + numberOfVariables + 1))
+   veroIdent = np.identity(numberOfRestrictions, dtype=np.float)
+   veroTop = np.zeros(numberOfRestrictions)
+
+   vero = np.vstack([veroIdent, veroTop])
+
+   print('Matrix vero: \n', vero)
 
    for i in range(0, numberOfRestrictions):
       for j in range(0, numberOfVariables + numberOfRestrictions):
@@ -62,10 +66,14 @@ def getTableau(A_fpi, b_fpi, c_fpi, numberOfRestrictions, numberOfVariables):
    for i in range(0, numberOfRestrictions):
       tableau[i][numberOfRestrictions + numberOfVariables] = b_fpi[i]
 
-   return tableau
+   tableauWithVero = np.concatenate((vero, tableau), axis=1)
 
-def findColumnToPivot(tableau):   
-   for i in range(0, tableau.shape[1] - 1):
+   print('Tableau with vero: \n', tableauWithVero)
+
+   return tableauWithVero
+
+def findColumnToPivot(tableau, numberOfRestrictions):   
+   for i in range(numberOfRestrictions, tableau.shape[1] - 1):
       if tableau[tableau.shape[0] - 1][i] > 0:
          return i
    
@@ -84,20 +92,44 @@ def findMinimumRatioInColumn(tableau, columnIndex, numberOfRestrictions):
 
    return indexOfPivotElement
 
+def checkTableau(tableau):
+   print('Checking Tableau Type')
+
+def getObjectiveValue(tableau):
+   return tableau[tableau.shape[0] - 1][tableau.shape[1] - 1]
+
+def getSolution(tableau, type):
+   return []
+
+def getCertificate(tableau, type):
+   return []
+
+def analyzeTableau(tableau):
+   PLType = checkTableau(tableau)
+
+   if PLType == 'optimal':
+      print('otima')
+      objectiveValue = getObjectiveValue(tableau)
+      solution = getSolution(tableau, 'optimality')
+      certificate = getCertificate(tableau, 'optimality')
+
+   elif PLType == 'unfeasible':
+      print('inviavel')
+      certificate = getCertificate(tableau, 'unfeasibility')
+   
+   elif PLType == 'limitless':
+      print('ilimitada')
+      solution = getSolution(tableau, 'limitlessness')
+      certificate = getCertificate(tableau, 'limitlessness')
+
 def main():
    numberOfRestrictions, numberOfVariables = [int(x) for x in input().split()]
 
-   (A, b, c) = getOptimizationInputValues(numberOfVariables)
+   (A, b, c) = getOptimizationInputValues(numberOfRestrictions)
 
    (A_fpi, b_fpi, c_fpi) = getFPIForm(A, b, c, numberOfRestrictions)
 
-   print('# Matriz A em FPI: \n', A_fpi)
-   print('# Vetor c em FPI: \n', c_fpi)
-   print('# Vetor b em FPI: \n', b_fpi)
-
    tableau = getTableau(A_fpi, b_fpi, c_fpi, numberOfRestrictions, numberOfVariables)
-
-   print('# Tableau formado: \n', tableau)
 
    iteration = 0
 
@@ -105,22 +137,24 @@ def main():
       iteration += 1
 
       print('>> Iteration: ', iteration);
+      print('Tableau: \n', tableau)
 
-      columnToPivot = findColumnToPivot(tableau)
+      columnToPivot = findColumnToPivot(tableau, numberOfRestrictions)
       if columnToPivot == -1:
-         print('> Tratar quando não haver coluna para pivotear')
          break;
 
       rowOfElementPivot = findMinimumRatioInColumn(tableau, columnToPivot, numberOfRestrictions)
       if rowOfElementPivot == -1:
-         print('> Tratar quando elementos da colunas para pivotear são menores ou iguais a zero')
          break;
 
       elementPivotIndexes = (rowOfElementPivot, columnToPivot)
 
       pivot(tableau, elementPivotIndexes)
 
-   print('## Tableau final: \n', tableau)
+   print('>> Término:')
+   print('Tableau: \n', tableau)
+
+   analyzeTableau(tableau);
 
 if __name__ == "__main__":
    main()
