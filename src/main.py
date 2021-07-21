@@ -54,27 +54,23 @@ def getTableau(A_fpi, b_fpi, c_fpi, numberOfRestrictions, numberOfVariables):
 
    vero = np.vstack([veroIdent, veroTop])
 
-   print('Matrix vero: \n', vero)
-
    for i in range(0, numberOfRestrictions):
       for j in range(0, numberOfVariables + numberOfRestrictions):
          tableau[i][j] = A_fpi[i][j]
 
    for i in range(0, numberOfVariables):
-      tableau[numberOfRestrictions][i] = c_fpi[i]
+      tableau[numberOfRestrictions][i] = c_fpi[i] * (-1)
 
    for i in range(0, numberOfRestrictions):
       tableau[i][numberOfRestrictions + numberOfVariables] = b_fpi[i]
 
    tableauWithVero = np.concatenate((vero, tableau), axis=1)
 
-   print('Tableau with vero: \n', tableauWithVero)
-
    return tableauWithVero
 
 def findColumnToPivot(tableau, numberOfRestrictions):   
    for i in range(numberOfRestrictions, tableau.shape[1] - 1):
-      if tableau[tableau.shape[0] - 1][i] > 0:
+      if tableau[tableau.shape[0] - 1][i] < 0:
          return i
    
    return -1
@@ -92,8 +88,12 @@ def findMinimumRatioInColumn(tableau, columnIndex, numberOfRestrictions):
 
    return indexOfPivotElement
 
-def checkTableau(tableau):
-   print('Checking Tableau Type')
+def checkTableau(tableau, numberOfRestrictions):
+   for i in range(numberOfRestrictions, tableau.shape[1] - 1):
+      if tableau[tableau.shape[0] - 1][i] < 0:
+         return 'not optimal'
+   
+   return 'optimal'
 
 def getObjectiveValue(tableau):
    return tableau[tableau.shape[0] - 1][tableau.shape[1] - 1]
@@ -104,14 +104,17 @@ def getSolution(tableau, type):
 def getCertificate(tableau, type):
    return []
 
-def analyzeTableau(tableau):
-   PLType = checkTableau(tableau)
+def analyzeTableau(tableau, numberOfRestrictions):
+   PLType = checkTableau(tableau, numberOfRestrictions)
 
    if PLType == 'optimal':
       print('otima')
       objectiveValue = getObjectiveValue(tableau)
+      print(objectiveValue)
       solution = getSolution(tableau, 'optimality')
+      print(solution)
       certificate = getCertificate(tableau, 'optimality')
+      print(certificate)
 
    elif PLType == 'unfeasible':
       print('inviavel')
@@ -154,7 +157,7 @@ def main():
    print('>> Término:')
    print('Tableau: \n', tableau)
 
-   analyzeTableau(tableau);
+   analyzeTableau(tableau, numberOfRestrictions)
 
 if __name__ == "__main__":
    main()
