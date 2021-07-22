@@ -142,15 +142,7 @@ def analyzeTableau(tableau, numberOfRestrictions, numberOfVariables):
       solution = getSolution(tableau, PLType)
       certificate = getCertificate(tableau, PLType)
 
-def main():
-   numberOfRestrictions, numberOfVariables = [int(x) for x in input().split()]
-
-   (A, b, c) = getOptimizationInputValues(numberOfRestrictions)
-
-   (A_fpi, b_fpi, c_fpi) = getFPIForm(A, b, c, numberOfRestrictions)
-
-   tableau = getTableau(A_fpi, b_fpi, c_fpi, numberOfRestrictions, numberOfVariables)
-
+def simplexIterations(tableau, numberOfRestrictions):
    iteration = 0
 
    while 1:
@@ -170,6 +162,24 @@ def main():
       elementPivotIndexes = (rowOfElementPivot, columnToPivot)
 
       pivot(tableau, elementPivotIndexes)
+
+def main():
+   numberOfRestrictions, numberOfVariables = [int(x) for x in input().split()]
+
+   needAux = 0
+
+   (A, b, c) = getOptimizationInputValues(numberOfRestrictions)
+
+   for i in range(0, b.shape[0]):
+      if b[i] < 0:
+         needAux = 1
+         break;
+
+   (A_fpi, b_fpi, c_fpi) = getFPIForm(A, b, c, numberOfRestrictions)
+
+   tableau = getTableau(A_fpi, b_fpi, c_fpi, numberOfRestrictions, numberOfVariables)
+
+   simplexIterations(tableau, numberOfRestrictions)
 
    print('>> Término:')
    print('Tableau: \n', tableau)
