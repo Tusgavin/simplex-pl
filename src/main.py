@@ -47,7 +47,35 @@ def getFPIForm(A, b, c, numberOfRestrictions):
 
    return (A_fpi, b_fpi, c_fpi)
 
-def getTableau(A_fpi, b_fpi, c_fpi, numberOfRestrictions, numberOfVariables):
+def getAuxFPIForm(A, b, c, numberOfRestrictions):
+   ident = np.identity(numberOfRestrictions, dtype=np.float)
+   new_vars = np.zeros((numberOfRestrictions), dtype=np.float)
+   zero_c = np.zeros((c.shape[0]), dtype=np.float)
+
+   for i in range(0, numberOfRestrictions):
+      new_vars[i] = 1
+
+   negative_b_indexes = []
+
+   b_fpi_aux = np.copy(b)
+
+   for i in range(0, b.shape[0]):
+      if b[i] <= 0:
+         negative_b_indexes.append(i)
+         b_fpi_aux[i] = b[i] * (-1)
+
+   inv_A = np.copy(A)
+
+   for i in range(0, A.shape[0]):
+      if i in negative_b_indexes:
+         inv_A[i,:] = A[i,:] * (-1)
+
+   A_fpi_aux = np.concatenate((inv_A, ident), axis=1)
+   c_fpi_aux = np.concatenate((zero_c, new_vars), axis=None)
+
+   return (A_fpi_aux, b_fpi_aux, c_fpi_aux)
+
+def getTableau(A_fpi, b_fpi, c_fpi, numberOfRestrictions, numberOfVariables, aux=False):
    tableau = np.zeros((numberOfRestrictions + 1, numberOfRestrictions + numberOfVariables + 1))
    veroIdent = np.identity(numberOfRestrictions, dtype=np.float)
    veroTop = np.zeros(numberOfRestrictions)
@@ -58,8 +86,13 @@ def getTableau(A_fpi, b_fpi, c_fpi, numberOfRestrictions, numberOfVariables):
       for j in range(0, numberOfVariables + numberOfRestrictions):
          tableau[i][j] = A_fpi[i][j]
 
-   for i in range(0, numberOfVariables):
-      tableau[numberOfRestrictions][i] = c_fpi[i] * (-1)
+   if aux:
+      for i in range(0, c_fpi.shape[0]):
+         tableau[numberOfRestrictions][i] = c_fpi[i]
+   else:
+      for i in range(0, numberOfVariables):
+         tableau[numberOfRestrictions][i] = c_fpi[i] * (-1)
+
 
    for i in range(0, numberOfRestrictions):
       tableau[i][numberOfRestrictions + numberOfVariables] = b_fpi[i]
@@ -89,11 +122,13 @@ def findMinimumRatioInColumn(tableau, columnIndex, numberOfRestrictions):
    return indexOfPivotElement
 
 def checkTableau(tableau, numberOfRestrictions):
-   for i in range(numberOfRestrictions, tableau.shape[1] - 1):
-      if tableau[tableau.shape[0] - 1][i] < 0:
-         return 'not optimal'
-   
-   return 'optimal'
+   indexC = findColumnToPivot(tableau, numberOfRestrictions)
+   if indexC == -1:
+      return "optimal"
+   else:
+      indexP = findMinimumRatioInColumn(tableau, indexC, numberOfRestrictions)
+      if indexP == -1:
+         return "limitless"
 
 def getObjectiveValue(tableau):
    return tableau[tableau.shape[0] - 1][tableau.shape[1] - 1]
@@ -107,6 +142,8 @@ def getSolution(tableau, type, numberOfRestrictions, numberOfVariables):
             index = np.where(tableau[:, i] == 1)
             if len(index[0]) == 1:
                solution.append(tableau[index[0][0]][tableau.shape[1] - 1])
+            else:
+               solution.append(0)
          else:
             solution.append(0)
 
@@ -139,17 +176,26 @@ def analyzeTableau(tableau, numberOfRestrictions, numberOfVariables):
    
    elif PLType == 'limitless':
       print('ilimitada')
-      solution = getSolution(tableau, PLType)
-      certificate = getCertificate(tableau, PLType)
+      solution = getSolution(tableau, PLType, numberOfRestrictions, numberOfVariables)
+      certificate = getCertificate(tableau, PLType, numberOfRestrictions)
+
+def analyzeAuxTableau(auxTableau, numberOfRestrictions, numberOfVariables):
+   PLType = checkTableau(auxTableau, numberOfRestrictions)
+
+   if PLType == 'optimal':
+      print('otima')
+      objectiveValue = getObjectiveValue(tableau)
+      print(objectiveValue)
+      solution = getSolution(tableau, PLType, numberOfRestrictions, numberOfVariables)
+      print(solution)
+      certificate = getCertificate(tableau, PLType, numberOfRestrictions)
+      print(certificate)
 
 def simplexIterations(tableau, numberOfRestrictions):
    iteration = 0
 
    while 1:
       iteration += 1
-
-      print('>> Iteration: ', iteration);
-      print('Tableau: \n', tableau)
 
       columnToPivot = findColumnToPivot(tableau, numberOfRestrictions)
       if columnToPivot == -1:
@@ -163,28 +209,31 @@ def simplexIterations(tableau, numberOfRestrictions):
 
       pivot(tableau, elementPivotIndexes)
 
+def auxCanonicalBase(tableauAux):
+   for i in range(0, tableauAux.shape[0] - 1):
+      tableauAux[tableauAux.shape[0] - 1,:] = tableauAux[tableauAux.shape[0] - 1,:] + (tableauAux[i,:] * (-1))
+
 def main():
    numberOfRestrictions, numberOfVariables = [int(x) for x in input().split()]
-
-   needAux = 0
-
    (A, b, c) = getOptimizationInputValues(numberOfRestrictions)
-
-   for i in range(0, b.shape[0]):
-      if b[i] < 0:
-         needAux = 1
-         break;
-
    (A_fpi, b_fpi, c_fpi) = getFPIForm(A, b, c, numberOfRestrictions)
+   (A_fpi_aux, b_fpi_aux, c_fpi_aux) = getAuxFPIForm(A, b, c, numberOfRestrictions)
 
+   tableauAux = getTableau(A_fpi_aux, b_fpi_aux, c_fpi_aux, numberOfRestrictions, numberOfVariables, True)
    tableau = getTableau(A_fpi, b_fpi, c_fpi, numberOfRestrictions, numberOfVariables)
 
-   simplexIterations(tableau, numberOfRestrictions)
+   print('Tableau Aux: \n', tableauAux)
 
-   print('>> Término:')
-   print('Tableau: \n', tableau)
+   auxCanonicalBase(tableauAux)
+
+   print('Tableau Aux after auxCanonicalBase: \n', tableauAux)
+
+   simplexIterations(tableau, numberOfRestrictions)
+   simplexIterations(tableauAux, numberOfRestrictions)
+
+   print('Tableau Aux after simplexIterations: \n', tableauAux)
 
    analyzeTableau(tableau, numberOfRestrictions, numberOfVariables)
-
+      
 if __name__ == "__main__":
    main()
