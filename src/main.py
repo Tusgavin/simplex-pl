@@ -64,26 +64,25 @@ def getAuxFPIForm(A, b, c, numberOfRestrictions):
          negative_b_indexes.append(i)
          b_fpi_aux[i] = b[i] * (-1)
 
-   inv_A = np.copy(A)
+   A_fpi_aux = np.concatenate((A, ident), axis=1)
 
-   for i in range(0, A.shape[0]):
+   for i in range(0, numberOfRestrictions):
       if i in negative_b_indexes:
-         inv_A[i,:] = A[i,:] * (-1)
+         A_fpi_aux[i,:] = A_fpi_aux[i,:] * (-1)
 
-   A_fpi_aux = np.concatenate((inv_A, ident), axis=1)
    c_fpi_aux = np.concatenate((zero_c, new_vars), axis=None)
 
    return (A_fpi_aux, b_fpi_aux, c_fpi_aux)
 
 def getTableau(A_fpi, b_fpi, c_fpi, numberOfRestrictions, numberOfVariables, aux=False):
-   tableau = np.zeros((numberOfRestrictions + 1, numberOfRestrictions + numberOfVariables + 1))
+   tableau = np.zeros((numberOfRestrictions + 1, 2*numberOfRestrictions + numberOfVariables + 1))
    veroIdent = np.identity(numberOfRestrictions, dtype=np.float)
    veroTop = np.zeros(numberOfRestrictions)
 
    vero = np.vstack([veroIdent, veroTop])
 
-   for i in range(0, numberOfRestrictions):
-      for j in range(0, numberOfVariables + numberOfRestrictions):
+   for i in range(0, A_fpi.shape[0]):
+      for j in range(0, A_fpi.shape[1]):
          tableau[i][j] = A_fpi[i][j]
 
    if aux:
@@ -93,9 +92,12 @@ def getTableau(A_fpi, b_fpi, c_fpi, numberOfRestrictions, numberOfVariables, aux
       for i in range(0, numberOfVariables):
          tableau[numberOfRestrictions][i] = c_fpi[i] * (-1)
 
-
-   for i in range(0, numberOfRestrictions):
-      tableau[i][numberOfRestrictions + numberOfVariables] = b_fpi[i]
+   if aux:
+      for i in range(0, numberOfRestrictions):
+         tableau[i][2*numberOfRestrictions + numberOfVariables] = b_fpi[i]
+   else:
+      for i in range(0, numberOfRestrictions):
+         tableau[i][numberOfRestrictions + numberOfVariables] = b_fpi[i]
 
    tableauWithVero = np.concatenate((vero, tableau), axis=1)
 
@@ -133,19 +135,29 @@ def checkTableau(tableau, numberOfRestrictions):
 def getObjectiveValue(tableau):
    return tableau[tableau.shape[0] - 1][tableau.shape[1] - 1]
 
-def getSolution(tableau, type, numberOfRestrictions, numberOfVariables):
+def getSolution(tableau, numberOfRestrictions, numberOfVariables):
    solution = []
 
-   if type == 'optimal':
-      for i in range(numberOfRestrictions, numberOfRestrictions + numberOfVariables):
-         if tableau[tableau.shape[0] - 1][i] == 0:
-            index = np.where(tableau[:, i] == 1)
-            if len(index[0]) == 1:
-               solution.append(tableau[index[0][0]][tableau.shape[1] - 1])
-            else:
-               solution.append(0)
+   # if aux:
+   #    for i in range(numberOfRestrictions, tableau.shape[1] - 1):
+   #       if tableau[tableau.shape[0] - 1][i] == 0:
+   #          index = np.where(tableau[:, i] == 1)
+   #          if len(index[0]) == 1:
+   #             solution.append(tableau[index[0][0]][tableau.shape[1] - 1])
+   #          else:
+   #             solution.append(0)
+   #       else:
+   #          solution.append(0)
+   # else:
+   for i in range(numberOfRestrictions, numberOfRestrictions + numberOfVariables):
+      if tableau[tableau.shape[0] - 1][i] == 0:
+         index = np.where(tableau[:, i] == 1)
+         if len(index[0]) == 1:
+            solution.append(tableau[index[0][0]][tableau.shape[1] - 1])
          else:
             solution.append(0)
+      else:
+         solution.append(0)
 
    return np.array(solution)
 
@@ -165,7 +177,7 @@ def analyzeTableau(tableau, numberOfRestrictions, numberOfVariables):
       print('otima')
       objectiveValue = getObjectiveValue(tableau)
       print(objectiveValue)
-      solution = getSolution(tableau, PLType, numberOfRestrictions, numberOfVariables)
+      solution = getSolution(tableau, numberOfRestrictions, numberOfVariables)
       print(solution)
       certificate = getCertificate(tableau, PLType, numberOfRestrictions)
       print(certificate)
@@ -217,23 +229,40 @@ def main():
    numberOfRestrictions, numberOfVariables = [int(x) for x in input().split()]
    (A, b, c) = getOptimizationInputValues(numberOfRestrictions)
    (A_fpi, b_fpi, c_fpi) = getFPIForm(A, b, c, numberOfRestrictions)
-   (A_fpi_aux, b_fpi_aux, c_fpi_aux) = getAuxFPIForm(A, b, c, numberOfRestrictions)
+   (A_fpi_aux, b_fpi_aux, c_fpi_aux) = getAuxFPIForm(A_fpi, b_fpi, c_fpi, numberOfRestrictions)
 
    tableauAux = getTableau(A_fpi_aux, b_fpi_aux, c_fpi_aux, numberOfRestrictions, numberOfVariables, True)
-   tableau = getTableau(A_fpi, b_fpi, c_fpi, numberOfRestrictions, numberOfVariables)
+   # tableau = getTableau(A_fpi, b_fpi, c_fpi, numberOfRestrictions, numberOfVariables)
 
-   print('Tableau Aux: \n', tableauAux)
+   # print(tableauAux)
 
    auxCanonicalBase(tableauAux)
 
-   print('Tableau Aux after auxCanonicalBase: \n', tableauAux)
+   # print(tableauAux)
 
-   simplexIterations(tableau, numberOfRestrictions)
    simplexIterations(tableauAux, numberOfRestrictions)
 
-   print('Tableau Aux after simplexIterations: \n', tableauAux)
+   # print(tableauAux)
 
-   analyzeTableau(tableau, numberOfRestrictions, numberOfVariables)
+   subs_tableau = np.delete(tableauAux, tableauAux.shape[1] - 2, 1)
+   subs_tableau = np.delete(subs_tableau, subs_tableau.shape[1] - 2, 1)
+
+   for i in range(0, c_fpi.shape[0]):
+      subs_tableau[subs_tableau.shape[0] - 1][numberOfRestrictions + i] = c_fpi[i] * (-1)
+
+   # print(subs_tableau)
+
+   simplexIterations(subs_tableau, numberOfRestrictions)
+
+   # print(subs_tableau)
+
+   auxSolution = getSolution(subs_tableau, numberOfRestrictions, numberOfVariables);
+   auxObjValue = getObjectiveValue(subs_tableau)
+
+   print(auxSolution)
+   print(auxObjValue)
+
+   # analyzeTableau(tableau, numberOfRestrictions, numberOfVariables)
       
 if __name__ == "__main__":
    main()
