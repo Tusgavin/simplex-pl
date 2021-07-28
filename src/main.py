@@ -66,7 +66,18 @@ def getAuxFPIForm(A, b, c, numberOfRestrictions):
          negative_b_indexes.append(i)
          b_fpi_aux[i] = b[i] * (-1)
 
+   # cpy_A = np.copy(A)
+
+   # for i in range(0, numberOfRestrictions):
+   #    if i in negative_b_indexes:
+   #       cpy_A[i,:] = cpy_A[i,:] * (-1)
+
+   # A_fpi_aux = np.concatenate((cpy_A, ident), axis=1)
+   # c_fpi_aux = np.concatenate((zero_c, new_vars), axis=None)
+
    A_fpi_aux = np.concatenate((A, ident), axis=1)
+
+   print(A_fpi_aux)
 
    for i in range(0, numberOfRestrictions):
       if i in negative_b_indexes:
@@ -130,15 +141,6 @@ def findMinimumRatioInColumn(tableau, columnIndex, numberOfRestrictions):
 
    return indexOfPivotElement
 
-def checkTableau(tableau, numberOfRestrictions):
-   indexC = findColumnToPivot(tableau, numberOfRestrictions)
-   if indexC == -1:
-      return "optimal"
-   else:
-      indexP = findMinimumRatioInColumn(tableau, indexC, numberOfRestrictions)
-      if indexP == -1:
-         return "limitless"
-
 def getObjectiveValue(tableau):
    return tableau[tableau.shape[0] - 1][tableau.shape[1] - 1]
 
@@ -168,47 +170,13 @@ def getSolution(tableau, numberOfRestrictions, numberOfVariables):
 
    return np.array(solution)
 
-def getCertificate(tableau, type, numberOfRestrictions):
+def getCertificate(tableau, numberOfRestrictions):
    certificate = []
 
-   if type == 'optimal':
-      for i in range(0, numberOfRestrictions):
-         certificate.append(tableau[tableau.shape[0] - 1][i])
+   for i in range(0, numberOfRestrictions):
+      certificate.append(tableau[tableau.shape[0] - 1][i])
 
    return np.array(certificate)
-
-def analyzeTableau(tableau, numberOfRestrictions, numberOfVariables):
-   PLType = checkTableau(tableau, numberOfRestrictions)
-
-   if PLType == 'optimal':
-      print('otima')
-      objectiveValue = getObjectiveValue(tableau)
-      print(objectiveValue)
-      solution = getSolution(tableau, numberOfRestrictions, numberOfVariables)
-      print(solution)
-      certificate = getCertificate(tableau, PLType, numberOfRestrictions)
-      print(certificate)
-
-   elif PLType == 'unfeasible':
-      print('inviavel')
-      certificate = getCertificate(tableau, PLType)
-   
-   elif PLType == 'limitless':
-      print('ilimitada')
-      solution = getSolution(tableau, PLType, numberOfRestrictions, numberOfVariables)
-      certificate = getCertificate(tableau, PLType, numberOfRestrictions)
-
-def analyzeAuxTableau(auxTableau, numberOfRestrictions, numberOfVariables):
-   PLType = checkTableau(auxTableau, numberOfRestrictions)
-
-   if PLType == 'optimal':
-      print('otima')
-      objectiveValue = getObjectiveValue(tableau)
-      print(objectiveValue)
-      solution = getSolution(tableau, PLType, numberOfRestrictions, numberOfVariables)
-      print(solution)
-      certificate = getCertificate(tableau, PLType, numberOfRestrictions)
-      print(certificate)
 
 def simplexIterations(tableau, numberOfRestrictions):
    iteration = 0
@@ -216,13 +184,18 @@ def simplexIterations(tableau, numberOfRestrictions):
    while 1:
       iteration += 1
 
+      # print('\n', iteration)
+
+      # print(np.around(tableau, 2))
+
       columnToPivot = findColumnToPivot(tableau, numberOfRestrictions)
       if columnToPivot == -1:
          break;
 
       rowOfElementPivot = findMinimumRatioInColumn(tableau, columnToPivot, numberOfRestrictions)
-      if rowOfElementPivot == -1:
-         break;
+      if rowOfElementPivot == -1:     
+         print('ilimitada')
+         quit()
 
       elementPivotIndexes = (rowOfElementPivot, columnToPivot)
 
@@ -245,35 +218,39 @@ def main():
 
    auxCanonicalBase(tableauAux)
 
-   # print(tableauAux)
+   # print('Auxiliar com base\n', tableauAux)
 
    simplexIterations(tableauAux, numberOfRestrictions)
 
    # print(tableauAux)
 
-   subs_tableau = np.delete(tableauAux, tableauAux.shape[1] - 2, 1)
-   subs_tableau = np.delete(subs_tableau, subs_tableau.shape[1] - 2, 1)
+   auxObjValue = round(getObjectiveValue(tableauAux))
 
+   if auxObjValue < 0:
+      print('inviavel')
+      certificate = getCertificate(tableauAux, numberOfRestrictions)
+      print(np.around(certificate, 5))
 
-   for i in range(0, c_fpi.shape[0]):
-      subs_tableau[subs_tableau.shape[0] - 1][numberOfRestrictions + i] = c_fpi[i] * (-1)
+   elif auxObjValue == 0:
+      subs_tableau = np.delete(tableauAux, tableauAux.shape[1] - 2, 1)
+      subs_tableau = np.delete(subs_tableau, subs_tableau.shape[1] - 2, 1)
+      print('otima')
+      for i in range(0, c_fpi.shape[0]):
+         subs_tableau[subs_tableau.shape[0] - 1][numberOfRestrictions + i] = c_fpi[i] * (-1)
 
-   for i in range(0, numberOfRestrictions):
-      subs_tableau[subs_tableau.shape[0] - 1][i] = 0
+      for i in range(0, numberOfRestrictions):
+         subs_tableau[subs_tableau.shape[0] - 1][i] = 0
 
-   simplexIterations(subs_tableau, numberOfRestrictions)
+      simplexIterations(subs_tableau, numberOfRestrictions)
+      # print(subs_tableau)
 
-   # print(subs_tableau)
+      solution = getSolution(subs_tableau, numberOfRestrictions, numberOfVariables);
+      objValue = getObjectiveValue(subs_tableau)
+      certificate = getCertificate(subs_tableau, numberOfRestrictions)
 
-   auxSolution = getSolution(subs_tableau, numberOfRestrictions, numberOfVariables);
-   auxObjValue = getObjectiveValue(subs_tableau)
-   certificate = getCertificate(subs_tableau, 'optimal', numberOfRestrictions)
-
-   print(auxSolution)
-   print(auxObjValue)
-   print(certificate)
-
-   # analyzeTableau(tableau, numberOfRestrictions, numberOfVariables)
+      print(round(objValue, 5))
+      print(np.around(solution, 5))
+      print(np.around(certificate, 5))
       
 if __name__ == "__main__":
    main()
