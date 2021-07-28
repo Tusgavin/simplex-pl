@@ -16,6 +16,8 @@ def pivot(tableau, elementPivotIndexes):
    
    tableau[elementPivotIndexes[0]][elementPivotIndexes[1]] = 1.0
 
+   # print(tableau)
+
 def getOptimizationInputValues(numberOfRestrictions):
    c = [int(x) for x in input().split()]
 
@@ -72,14 +74,19 @@ def getAuxFPIForm(A, b, c, numberOfRestrictions):
 
    c_fpi_aux = np.concatenate((zero_c, new_vars), axis=None)
 
-   return (A_fpi_aux, b_fpi_aux, c_fpi_aux)
+   return (A_fpi_aux, b_fpi_aux, c_fpi_aux, negative_b_indexes)
 
-def getTableau(A_fpi, b_fpi, c_fpi, numberOfRestrictions, numberOfVariables, aux=False):
+def getTableau(A_fpi, b_fpi, c_fpi, numberOfRestrictions, numberOfVariables, aux=False, negative_b_indexes=[]):
    tableau = np.zeros((numberOfRestrictions + 1, 2*numberOfRestrictions + numberOfVariables + 1))
    veroIdent = np.identity(numberOfRestrictions, dtype=np.float)
    veroTop = np.zeros(numberOfRestrictions)
 
    vero = np.vstack([veroIdent, veroTop])
+
+   if len(negative_b_indexes) != 0:
+      for i in range(numberOfRestrictions):
+         if i in negative_b_indexes:
+            vero[i,:] = vero[i,:] * (-1)
 
    for i in range(0, A_fpi.shape[0]):
       for j in range(0, A_fpi.shape[1]):
@@ -229,9 +236,9 @@ def main():
    numberOfRestrictions, numberOfVariables = [int(x) for x in input().split()]
    (A, b, c) = getOptimizationInputValues(numberOfRestrictions)
    (A_fpi, b_fpi, c_fpi) = getFPIForm(A, b, c, numberOfRestrictions)
-   (A_fpi_aux, b_fpi_aux, c_fpi_aux) = getAuxFPIForm(A_fpi, b_fpi, c_fpi, numberOfRestrictions)
+   (A_fpi_aux, b_fpi_aux, c_fpi_aux, negative_b_indexes) = getAuxFPIForm(A_fpi, b_fpi, c_fpi, numberOfRestrictions)
 
-   tableauAux = getTableau(A_fpi_aux, b_fpi_aux, c_fpi_aux, numberOfRestrictions, numberOfVariables, True)
+   tableauAux = getTableau(A_fpi_aux, b_fpi_aux, c_fpi_aux, numberOfRestrictions, numberOfVariables, True, negative_b_indexes)
    # tableau = getTableau(A_fpi, b_fpi, c_fpi, numberOfRestrictions, numberOfVariables)
 
    # print(tableauAux)
@@ -247,10 +254,12 @@ def main():
    subs_tableau = np.delete(tableauAux, tableauAux.shape[1] - 2, 1)
    subs_tableau = np.delete(subs_tableau, subs_tableau.shape[1] - 2, 1)
 
+
    for i in range(0, c_fpi.shape[0]):
       subs_tableau[subs_tableau.shape[0] - 1][numberOfRestrictions + i] = c_fpi[i] * (-1)
 
-   # print(subs_tableau)
+   for i in range(0, numberOfRestrictions):
+      subs_tableau[subs_tableau.shape[0] - 1][i] = 0
 
    simplexIterations(subs_tableau, numberOfRestrictions)
 
@@ -258,9 +267,11 @@ def main():
 
    auxSolution = getSolution(subs_tableau, numberOfRestrictions, numberOfVariables);
    auxObjValue = getObjectiveValue(subs_tableau)
+   certificate = getCertificate(subs_tableau, 'optimal', numberOfRestrictions)
 
    print(auxSolution)
    print(auxObjValue)
+   print(certificate)
 
    # analyzeTableau(tableau, numberOfRestrictions, numberOfVariables)
       
