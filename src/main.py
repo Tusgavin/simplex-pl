@@ -1,5 +1,8 @@
 import numpy as np
 
+def printArraySolution(array):
+   print(' '.join(str(round(value, 7)) for value in array))
+
 def pivot(tableau, elementPivotIndexes):
    for i in range(0, tableau.shape[0]):
       for j in range(0, tableau.shape[1]):
@@ -193,7 +196,9 @@ def simplexIterations(tableau, numberOfRestrictions, numberOfVariables):
          print('ilimitada')
          
          solution = getSolution(tableau, numberOfRestrictions, numberOfVariables);
-         print(solution)
+         printArraySolution(solution)
+
+         # print(np.around(tableau, 2))
          
          cert = np.zeros(tableau.shape[1])
          cert[columnToPivot - numberOfRestrictions] = 1
@@ -206,7 +211,7 @@ def simplexIterations(tableau, numberOfRestrictions, numberOfVariables):
          
          cert = cert[:numberOfVariables]
 
-         print(cert)
+         printArraySolution(cert)
          quit()
 
       elementPivotIndexes = (rowOfElementPivot, columnToPivot)
@@ -234,7 +239,7 @@ def main():
    if auxObjValue < 0:
       print('inviavel')
       certificate = getCertificate(tableauAux, numberOfRestrictions)
-      print(np.around(certificate, 5))
+      printArraySolution(certificate)
 
    elif auxObjValue == 0:
       subs_tableau = np.delete(tableauAux, tableauAux.shape[1] - 2, 1)
@@ -252,9 +257,9 @@ def main():
       objValue = getObjectiveValue(subs_tableau)
       certificate = getCertificate(subs_tableau, numberOfRestrictions)
 
-      print(objValue)
-      print(solution)
-      print(certificate)
+      print(round(objValue, 7))
+      printArraySolution(solution)
+      printArraySolution(certificate)
       
 if __name__ == "__main__":
    main()
